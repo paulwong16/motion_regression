@@ -3,7 +3,7 @@ To obtain velocity and acceleration from pose sequences with corresponding times
 
 <img src="https://github.com/paulwong16/motion_regression/blob/master/cp.png" alt="compare" />
 
-The result is more smooth comparing to the EuRoc estimated groundtruth. (V2_01_easy)
+The result is smoother comparing to the EuRoc estimated groundtruth. (V2_01_easy)
 
 ## 1. Prerequisites
 

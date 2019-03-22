@@ -1,3 +1,11 @@
+"""
+motion_regression.py
+Created in : 3/21/19
+Author     : Zhijie Wang
+Email      : paul dot wangzhijie at outlook dot com
+"""
+
+
 import numpy as np
 import os
 import pandas

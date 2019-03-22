@@ -10,10 +10,10 @@ __Test environments:__ Python 3.5.2, numpy 1.16.2, pandas 0.24.1, progressbar2 3
 
 ## 2. Usage
 
-'''
-python motion_regression.py --pose_path YOUR_PATH 
+```
+    python motion_regression.py --pose_path YOUR_PATH
 
-'''
+```
 
 ## 3. Authors
 

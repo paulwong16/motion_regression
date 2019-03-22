@@ -354,7 +354,7 @@ if __name__ == '__main__':
     samples_num = int(args.samples_num / 2)
 
     pose_data = np.loadtxt(root_path, dtype=np.float, delimiter=',')
-    pose_data = pose_data[args.skip_front:, [0, 1, 2, 3, 4, 5, 6, 7]]
+    pose_data = pose_data[args.skip_front:, ]
     pose_timestamp = pose_data[:, 0]
 
     qt = np.array([1, 0, 0, 0], dtype=np.float)
@@ -396,6 +396,6 @@ if __name__ == '__main__':
     data_mat = np.concatenate([result], axis=1)
 
     data_pandas = pandas.DataFrame(data_mat, columns=column_list)
-    data_pandas.to_csv(output_folder + '/regression_data.csv')
+    data_pandas.to_csv(output_folder + 'regression_data.csv')
 
-    print('Data written to ' + output_folder + '/regression_data.csv')
+    print('Data written to ' + output_folder + 'regression_data.csv')

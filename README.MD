@@ -1,6 +1,10 @@
 # motion_regression
 To obtain velocity and acceleration from pose sequences with corresponding timestamp.
 
+<img src="https://github.com/paulwong16/motion_regression/blob/master/cp.png" alt="compare" />
+
+The result is more smooth comparing to the EuRoc estimated groundtruth. (V2_01_easy)
+
 ## 1. Prerequisites
 
 1. Python 3
@@ -21,5 +25,7 @@ Zhijie Wang (paul dot wangzhijie at outlook dot com)
 ## 4. References
 
 - Sittel, Florian, Jörg Müller, and Wolfram Burgard. Computing velocities and accelerations from a pose time sequence in three-dimensional space. Technical Report 272, University of Freiburg, Department of Computer Science, 2013.
+
+- Burri, Michael, et al. "The EuRoC micro aerial vehicle datasets." The International Journal of Robotics Research 35.10 (2016): 1157-1163.
 
 - [tf.transformation](https://www.lfd.uci.edu/~gohlke/code/transformations.py.html)

@@ -151,6 +151,16 @@ def euler_from_matrix(matrix, axes='sxyz'):
     return ax, ay, az
 
 
+def from_rotation_matrix(matrix):
+    size = matrix.shape[0]
+    result = np.zeros(shape=(size, 4), dtype=np.float)
+    for i in range(matrix.shape[0]):
+        rot_matrix = [[matrix[i, 0], matrix[i, 1], matrix[i, 2]], [matrix[i, 3], matrix[i, 4], matrix[i, 5]],
+                      [matrix[i, 6], matrix[i, 7], matrix[i, 8]]]
+        result[i] = quaternion_from_matrix(rot_matrix)
+    return result
+
+
 def quaternion_from_matrix(matrix, isprecise=False):
     """Return quaternion from rotation matrix.
 
@@ -401,9 +411,9 @@ if __name__ == '__main__':
         print('Rotation data input type: quaternion')
 
     elif args.rotation_format == 1:
-        pose = pose_data[:, [0, 1, 2, 3]]
-        rotation_matrix = pose_data[:, [4, 5, 6, 7, 8, 9, 10, 11, 12]]
-        quat_data = quaternion_from_matrix(rotation_matrix)
+        pose = pose_data[:, [0, 4, 8, 12]]
+        rotation_matrix = pose_data[:, [1, 2, 3, 5, 6, 7, 9, 10, 11]]
+        quat_data = from_rotation_matrix(rotation_matrix)
         quat_data = quaternion_normalize(quat_data)
         pose = np.c_[pose, quat_data]
         print('Rotation data input type: rotation matrix')

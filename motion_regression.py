@@ -5,11 +5,9 @@ Author     : Zhijie Wang
 Email      : paul dot wangzhijie at outlook dot com
 """
 
-
 import numpy as np
 import os
 import pandas
-import progressbar
 import time
 import math
 
@@ -338,8 +336,21 @@ def motion_regression_6d(pnts, qt, t):
     return result
 
 
+def motion_regression_pid(pid_id, pose_num, window_size, pose_seq, timestamp, q_t, return_dict):
+    print("Run pid %s ..." % pid_id)
+    result = np.zeros(shape=(pose_num, 10))
+    for j in range(pid_id*pose_num, (pid_id+1)*pose_num):
+        if (j >= window_size) and (j < (pose_seq.shape[0] - window_size)):
+            result[j-pid_id*pose_num] = motion_regression_6d(pose_seq[(j-window_size):(j+window_size), :], q_t, timestamp[j])
+
+    return_dict[pid_id] = result
+
+
 if __name__ == '__main__':
     import argparse
+    import multiprocessing
+
+    start_time = time.time()
 
     parser = argparse.ArgumentParser()
     parser.add_argument('--pose_path', default=None)
@@ -347,6 +358,7 @@ if __name__ == '__main__':
     parser.add_argument('--rotation_format', default=0, type=int, help=('0:quat,1:rot,2:eul'))
     parser.add_argument('--skip_front', type=int, default=1, help='Number of discarded records at beginning.')
     parser.add_argument('--samples_num', type=int, default=10, help='Number of samples for estimation')
+    parser.add_argument('--pid', type=int, default=8, help="Number of pids")
 
     args = parser.parse_args()
     root_path = os.path.abspath(args.pose_path)
@@ -388,22 +400,50 @@ if __name__ == '__main__':
 
     print("Number of poses: %i" %(pose_timestamp.shape[0]))
     print("Number of samples: %i. Skip first and last %i poses." %(samples_num, samples_num))
-    bar = progressbar.ProgressBar(max_value=(pose_timestamp.shape[0] - samples_num - 1))
-    # bar = progressbar.ProgressBar(max_value=1000)
+    # bar = progressbar.ProgressBar(max_value=(pose_timestamp.shape[0] - samples_num - 1))
+    # # bar = progressbar.ProgressBar(max_value=1000)
+    #
+    # result = np.zeros(shape=(pose_timestamp.shape[0], 10))
+    # # result = np.zeros(shape=(1000, 10))
+    # for i in range(samples_num, (pose_timestamp.shape[0]-samples_num-1)):
+    # # for i in range(samples_num, (1000-samples_num-1)):
+    #     result[i-samples_num] = motion_regression_6d(pose[(i-samples_num):(i+samples_num), :], qt, pose_timestamp[i])
+    #     time.sleep(0.1)
+    #     bar.update(i)
 
-    result = np.zeros(shape=(pose_timestamp.shape[0], 10))
-    # result = np.zeros(shape=(1000, 10))
-    for i in range(samples_num, (pose_timestamp.shape[0]-samples_num-1)):
-    # for i in range(samples_num, (1000-samples_num-1)):
-        result[i-samples_num] = motion_regression_6d(pose[(i-samples_num):(i+samples_num), :], qt, pose_timestamp[i])
-        time.sleep(0.1)
-        bar.update(i)
+    # result = np.zeros(shape=(pose_timestamp.shape[0], 10))
+    pid_num = args.pid
+    print("Start %i pid(s) for processing data." % pid_num)
+    # p = Pool()
+    pose_num_0 = pose_timestamp.shape[0] // pid_num
+    # result = np.zeros(shape=((pose_num_0*pid_num), 10))
+    manager = multiprocessing.Manager()
+    return_dict = manager.dict()
+    jobs = []
+    for i in range(pid_num):
+        # result[i*pose_num_0:(i+1)*pose_num_0, ] = p.apply_async(
+        #         motion_regression_pid(i, pose_num_0, samples_num, pose, pose_timestamp, qt), [i])
+        p = multiprocessing.Process(target=motion_regression_pid, args=(i, pose_num_0, samples_num, pose, pose_timestamp, qt, return_dict))
+        jobs.append(p)
+        p.start()
 
+    for proc in jobs:
+        proc.join()
+
+    result = return_dict.values()[0]
+    for i in range(1, pid_num):
+        result = np.r_[result, return_dict.values()[i]]
+
+    result = result[samples_num:-samples_num, ]
     column_list = 'time,lin_vel_x,lin_vel_y,lin_vel_z,lin_acc_x,lin_acc_y,lin_acc_z,ang_vel_r,ang_vel_p,ang_vel_y'.split(',')
 
     data_mat = np.concatenate([result], axis=1)
 
     data_pandas = pandas.DataFrame(data_mat, columns=column_list)
-    data_pandas.to_csv(output_folder + 'regression_data.csv')
+    data_pandas.to_csv(output_folder + '/regression_data.csv')
 
-    print('Data written to ' + output_folder + 'regression_data.csv')
+    print('Data written to ' + output_folder + '/regression_data.csv')
+
+    end_time = time.time()
+
+    print("%f seconds used for processing." %(end_time - start_time))

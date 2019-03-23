@@ -238,7 +238,22 @@ def quaternion_multiply(quaternion1, quaternion0):
 
 def quaternion_conjugate(quaternion0):
     w, x, y, z = quaternion0
-    return np.array([w, -x, -y, -z], dtype = np.float)
+    return np.array([w, -x, -y, -z], dtype=np.float)
+
+
+def fix_radians(angle):
+    r, p, y = angle
+    return np.array([fix_radian(r), fix_radian(p), fix_radian(y)], dtype=np.float)
+
+
+def fix_radian(angle):
+    if angle > 3.141592653589793:
+        while angle > 3.141592653589793:
+            angle = angle - 6.283185307179586
+    elif angle < -3.141592653589793:
+        while angle < -3.141592653589793:
+            angle = angle + 6.283185307179586
+    return angle
 
 
 def motion_regression_1d(pnts, t):
@@ -253,6 +268,7 @@ def motion_regression_1d(pnts, t):
     """
 
     nano_to_sec = 1000000000.0
+    micro_to_sec = 1000000.0
 
     sx = 0.0
     stx = 0.0
@@ -262,7 +278,7 @@ def motion_regression_1d(pnts, t):
     st3 = 0.0
     st4 = 0.0
     for pnt in pnts:
-        ti = (pnt[1] - t) / nano_to_sec
+        ti = (pnt[1] - t) / micro_to_sec
         sx += pnt[0]
         stx += pnt[0] * ti
         st2x += pnt[0] * ti ** 2
@@ -326,12 +342,16 @@ def motion_regression_6d(pnts, qt, t):
         q_dd[i-4] = a
 
     # Keeping all velocities and accelerations in the inertial frame
-    ang_vel = 2 * quaternion_multiply(q_d, quaternion_conjugate(qt))
-    ang_acc = 2 * quaternion_multiply(q_dd, quaternion_conjugate(qt))
+    ang_vel = 2 * quaternion_multiply(quaternion_conjugate(qt), q_d)
+    ang_acc = 2 * quaternion_multiply(quaternion_conjugate(qt), q_dd)
 
-    ang_vel_eul = euler_from_quaternion(ang_vel)
+    omega = [ang_vel[1], ang_vel[2], ang_vel[3]]
+    omega = fix_radians(omega)
 
-    result = [t, lin_vel[0], lin_vel[1], lin_vel[2], lin_acc[0], lin_acc[1], lin_acc[2], ang_vel_eul[0], ang_vel_eul[1], ang_vel_eul[2]]
+    # account for fictitious forces
+    lin_acc = lin_acc - np.cross(omega, lin_vel)
+
+    result = [t, lin_vel[0], lin_vel[1], lin_vel[2], lin_acc[0], lin_acc[1], lin_acc[2], omega[0], omega[1], omega[2]]
 
     return result
 

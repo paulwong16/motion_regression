@@ -241,19 +241,17 @@ def quaternion_conjugate(quaternion0):
     return np.array([w, -x, -y, -z], dtype=np.float)
 
 
-def fix_radians(angle):
-    r, p, y = angle
-    return np.array([fix_radian(r), fix_radian(p), fix_radian(y)], dtype=np.float)
-
-
-def fix_radian(angle):
-    if angle > 3.141592653589793:
-        while angle > 3.141592653589793:
-            angle = angle - 6.283185307179586
-    elif angle < -3.141592653589793:
-        while angle < -3.141592653589793:
-            angle = angle + 6.283185307179586
-    return angle
+def quaternion_normalize(quaternion0):
+    w = quaternion0[:, 0]
+    x = quaternion0[:, 1]
+    y = quaternion0[:, 2]
+    z = quaternion0[:, 3]
+    norm = np.sqrt(w**2+x**2+y**2+z**2)
+    result = w/norm
+    result = np.c_[result, (x / norm)]
+    result = np.c_[result, (y / norm)]
+    result = np.c_[result, (z / norm)]
+    return result
 
 
 def motion_regression_1d(pnts, t):
@@ -278,7 +276,7 @@ def motion_regression_1d(pnts, t):
     st3 = 0.0
     st4 = 0.0
     for pnt in pnts:
-        ti = (pnt[1] - t) / micro_to_sec
+        ti = (pnt[1] - t) / nano_to_sec
         sx += pnt[0]
         stx += pnt[0] * ti
         st2x += pnt[0] * ti ** 2
@@ -346,7 +344,6 @@ def motion_regression_6d(pnts, qt, t):
     ang_acc = 2 * quaternion_multiply(quaternion_conjugate(qt), q_dd)
 
     omega = [ang_vel[1], ang_vel[2], ang_vel[3]]
-    omega = fix_radians(omega)
 
     # account for fictitious forces
     lin_acc = lin_acc - np.cross(omega, lin_vel)
@@ -405,13 +402,16 @@ if __name__ == '__main__':
 
     elif args.rotation_format == 1:
         pose = pose_data[:, [0, 1, 2, 3]]
-        rotation_matrix = pose_data[:, [4, 5, 6]]
-        pose = np.c_[pose, (quaternion_from_matrix(rotation_matrix))]
+        rotation_matrix = pose_data[:, [4, 5, 6, 7, 8, 9, 10, 11, 12]]
+        quat_data = quaternion_from_matrix(rotation_matrix)
+        quat_data = quaternion_normalize(quat_data)
+        pose = np.c_[pose, quat_data]
         print('Rotation data input type: rotation matrix')
 
     elif args.rotation_format == 2:
         pose = pose_data[:, [0, 1, 2, 3]]
         quat_data = from_euler_angles(pose_data[:, [4, 5, 6]])
+        quat_data = quaternion_normalize(quat_data)
         pose = np.c_[pose, quat_data]
         print('Rotation data input type: euler angle')
 

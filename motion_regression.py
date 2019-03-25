@@ -157,7 +157,8 @@ def from_rotation_matrix(matrix):
     for i in range(matrix.shape[0]):
         rot_matrix = [[matrix[i, 0], matrix[i, 1], matrix[i, 2]], [matrix[i, 3], matrix[i, 4], matrix[i, 5]],
                       [matrix[i, 6], matrix[i, 7], matrix[i, 8]]]
-        result[i] = quaternion_from_matrix(rot_matrix)
+        result[i] = [quaternion_from_matrix(rot_matrix)[3], quaternion_from_matrix(rot_matrix)[0],
+                     quaternion_from_matrix(rot_matrix)[1], quaternion_from_matrix(rot_matrix)[2]]
     return result
 
 
@@ -411,7 +412,10 @@ if __name__ == '__main__':
         print('Rotation data input type: quaternion')
 
     elif args.rotation_format == 1:
-        pose = pose_data[:, [0, 4, 8, 12]]
+        pose = pose_data[:, [0]]
+        pose = np.c_[pose, pose_data[:, [4]] - pose_data[0, 4]]
+        pose = np.c_[pose, pose_data[:, [8]] - pose_data[0, 8]]
+        pose = np.c_[pose, pose_data[:, [12]] - pose_data[0, 12]]
         rotation_matrix = pose_data[:, [1, 2, 3, 5, 6, 7, 9, 10, 11]]
         quat_data = from_rotation_matrix(rotation_matrix)
         quat_data = quaternion_normalize(quat_data)
